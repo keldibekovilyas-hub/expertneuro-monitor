@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ExpertNeuro · Отдел аналитики</title>
+<style>
+:root{
+  --surface:#fcfcfb; --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --accent:#2a78d6; --gen:#1baf7a; --crit:#e34948; --ctrl:#2a78d6; --script:#4a3aa7; --land:#eb6834; --orch:#898781;
+  --good:#0ca30c; --goodtx:#006300; --warn:#c98500; --bad:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --surface:#1a1a19; --page:#0d0d0d; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --accent:#3987e5; --gen:#199e70; --crit:#e66767; --ctrl:#3987e5; --script:#9085e9; --land:#d95926; --orch:#898781;
+    --good:#0ca30c; --goodtx:#0ca30c; --warn:#c98500; --bad:#e66767; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 18px 70px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:12.5px;margin:2px 0 0}
+.nav{margin-top:10px;font-size:13px}
+.nav a{color:var(--accent);text-decoration:none;margin-right:14px}
+h2{font-size:15.5px;margin:30px 0 10px}
+/* агенты */
+.staff{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}
+.emp{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;border-top:3px solid var(--ac,var(--accent))}
+.emp .role{font-weight:700;font-size:13.5px}
+.emp .duty{color:var(--muted);font-size:11.5px;margin-top:2px;min-height:28px}
+.emp .stat{margin-top:8px;font-size:12px;color:var(--ink2)}
+.emp .stat b{color:var(--ink)}
+/* селектор прогона */
+.runsel{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.runbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink2);border-radius:999px;padding:5px 13px;cursor:pointer;font-size:12.5px}
+.runbtn[aria-pressed="true"]{background:var(--ink);color:var(--page);border-color:transparent;font-weight:600}
+/* канбан */
+.kan{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:12px}
+.col{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.col h3{font-size:12px;color:var(--ink2);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.hcard{border:1px solid var(--grid);border-radius:9px;padding:9px 11px;margin-bottom:8px;font-size:12.5px;background:var(--page)}
+.hcard .nm{font-weight:650;margin-bottom:3px}
+.hcard .why{color:var(--ink2);font-size:11.5px}
+.hcard .mt{color:var(--muted);font-size:11px;margin-top:5px}
+.badge{display:inline-block;border-radius:5px;padding:0 6px;font-size:10.5px;font-weight:700;margin-left:6px}
+.badge.pass{color:var(--goodtx);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.badge.dead{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.badge.rew{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+/* лента */
+.feed{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;gap:10px;align-items:flex-start}
+.ava{flex:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;background:var(--ac,var(--muted))}
+.bub{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;max-width:760px}
+.bub .who{font-size:11.5px;color:var(--muted);margin-bottom:3px}
+.bub .who b{color:var(--ink);font-size:12.5px}
+.bub .txt{font-size:13px;white-space:pre-wrap}
+.bub.attack{border-left:3px solid var(--crit)}
+.bub.verify{border-left:3px solid var(--ctrl)}
+.bub.propose{border-left:3px solid var(--gen)}
+.bub.produce{border-left:3px solid var(--script)}
+.bub.system{border-left:3px solid var(--orch)}
+.vs{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:5px;margin-left:8px;vertical-align:1px}
+.vs.PASS{color:var(--goodtx);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.vs.DEAD{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.vs.REWORK{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.vs.APPROVED{color:var(--goodtx);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.empty{color:var(--muted);font-size:13px;background:var(--surface);border:1px dashed var(--axis);border-radius:12px;padding:18px;text-align:center;margin-top:12px}
+footer{margin-top:44px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--grid);padding-top:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Отдел аналитики · агенты за работой</h1>
+<p class="sub" id="sub">данные зашифрованы — нужен пароль</p>
+<nav class="nav"><a href="index.html">← Монитор CRM</a></nav>
+
+<h2>Сотрудники</h2>
+<div class="staff" id="staff"></div>
+
+<h2>Прогоны конвейера</h2>
+<div class="runsel" id="runsel"></div>
+
+<h2>Гипотезы <span style="color:var(--muted);font-weight:400;font-size:12px">— путь каждой идеи</span></h2>
+<div class="kan" id="kanban"></div>
+
+<h2>Как это было <span style="color:var(--muted);font-weight:400;font-size:12px">— лента спора</span></h2>
+<div class="feed" id="feed"></div>
+
+<footer>
+Конвейер: генератор предлагает → критик атакует (PASS/REWORK/DEAD) → контролёр сверяет каждую цифру с
+Битриксом → сценарист/лендинг-мейкер производят материалы для одобренного. Журнал пишет оркестратор
+(Claude Code, /hypotheses). Мониторинг CRM при этом крутится на чистых скриптах без токенов.
+</footer>
+</div>
+
+<script src="data/runs.enc.js" onerror="void 0"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const AGENTS={
+ "idea-generator":{n:"Генератор идей",i:"G",c:"var(--gen)",duty:"гипотезы из данных: CPL, детализации, динамика объявлений"},
+ "critic":{n:"Критик",i:"K",c:"var(--crit)",duty:"адвокат дьявола: бьёт по данным, логике и цене ошибки"},
+ "data-controller":{n:"Контролёр данных",i:"D",c:"var(--ctrl)",duty:"сверка каждой цифры с первоисточником, методика"},
+ "video-scriptwriter":{n:"Сценарист",i:"S",c:"var(--script)",duty:"сценарии видео под одобренные гипотезы"},
+ "landing-builder":{n:"Лендинг-мейкер",i:"L",c:"var(--land)",duty:"посадочные страницы с UTM-контрактом"},
+ "orchestrator":{n:"Оркестратор",i:"О",c:"var(--orch)",duty:"ведёт конвейер, собирает пакет для теста"}};
+function esc(t){const s=document.createElement('span');s.textContent=String(t??'');return s.innerHTML;}
+async function decrypt(blob,pw){
+  const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(blob.salt),iterations:blob.iter||300000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(blob.iv)},key,b64(blob.ct))));
+}
+function staffCards(runs){
+  const st={};
+  Object.keys(AGENTS).forEach(k=>st[k]={acts:0,extra:""});
+  let pass=0,dead=0;
+  runs.forEach(r=>(r.steps||[]).forEach(s=>{ if(st[s.agent])st[s.agent].acts++;
+    if(s.agent==="critic"&&s.verdict==="PASS")pass++; if(s.agent==="critic"&&s.verdict==="DEAD")dead++;}));
+  st["critic"].extra=dead+pass?`выжило <b>${pass}</b> · убито <b>${dead}</b>`:"";
+  $('staff').innerHTML=Object.entries(AGENTS).map(([k,a])=>`
+   <div class="emp" style="--ac:${a.c}">
+     <div class="role">${a.n}</div><div class="duty">${a.duty}</div>
+     <div class="stat">действий: <b>${st[k].acts}</b>${st[k].extra?" · "+st[k].extra:""}</div>
+   </div>`).join("");
+}
+function kanban(run){
+  const cols={proposed:["Предложено","hcard"],approved:["Одобрено к тесту","hcard"],production:["Материалы готовы","hcard"],dead:["Отклонено критикой","hcard"]};
+  const buckets={proposed:[],approved:[],production:[],dead:[]};
+  (run.hypotheses||[]).forEach(h=>{
+    const b=h.status==="dead"?"dead":h.status==="production"?"production":h.status==="approved"?"approved":"proposed";
+    buckets[b].push(h);
+  });
+  $('kanban').innerHTML=Object.entries(cols).map(([k,[title]])=>`
+   <div class="col"><h3>${title} · ${buckets[k].length}</h3>
+   ${buckets[k].map(h=>`<div class="hcard"><div class="nm">${esc(h.name)}${h.verdict?`<span class="badge ${h.verdict==="PASS"?"pass":h.verdict==="DEAD"?"dead":"rew"}">${h.verdict}</span>`:""}</div>
+     <div class="why">${esc(h.why||"")}</div>
+     ${h.metric?`<div class="mt">📏 ${esc(h.metric)}</div>`:""}</div>`).join("")||'<div style="color:var(--muted);font-size:12px">—</div>'}
+   </div>`).join("");
+}
+function feed(run){
+  $('feed').innerHTML=(run.steps||[]).map(s=>{
+    const a=AGENTS[s.agent]||AGENTS.orchestrator;
+    return `<div class="msg"><div class="ava" style="--ac:${a.c}">${a.i}</div>
+      <div class="bub ${s.type||"system"}"><div class="who"><b>${a.n}</b> · ${esc(s.ts||"")}${s.verdict?`<span class="vs ${esc(s.verdict)}">${esc(s.verdict)}</span>`:""}</div>
+      <div class="txt">${esc(s.text)}</div></div></div>`;
+  }).join("")||'<div class="empty">Журнал пуст</div>';
+}
+function show(runs,idx){
+  const run=runs[idx];
+  $('runsel').innerHTML=runs.map((r,i)=>`<button class="runbtn" aria-pressed="${i===idx}" data-i="${i}">${esc(r.run_id)}</button>`).join("");
+  document.querySelectorAll('.runbtn').forEach(b=>b.addEventListener('click',()=>show(runs,+b.dataset.i)));
+  $('sub').textContent=`Прогонов: ${runs.length} · выбран ${run.run_id} · фокус: ${run.focus||"весь портфель"} · ${run.started||""}`;
+  kanban(run); feed(run);
+}
+function askPw(cb){
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:var(--page);display:flex;align-items:center;justify-content:center;z-index:99";
+  ov.innerHTML=`<form id="pwf" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 30px;max-width:340px;width:92%">
+   <div style="font-weight:700;font-size:17px;margin-bottom:4px">Отдел аналитики</div>
+   <div style="color:var(--muted);font-size:12.5px;margin-bottom:14px">Журналы зашифрованы. Введите пароль.</div>
+   <input id="pwi" type="password" style="width:100%;padding:10px 12px;border:1px solid var(--axis);border-radius:8px;background:var(--page);color:var(--ink);font-size:15px" autofocus>
+   <div id="pwe" style="color:var(--bad);font-size:12px;height:16px;margin-top:6px"></div>
+   <button style="width:100%;margin-top:8px;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:650;cursor:pointer">Открыть</button></form>`;
+  document.body.append(ov);
+  $('pwf').addEventListener("submit",async e=>{e.preventDefault();
+    try{const runs=await decrypt(window.OTDEL_ENC,$('pwi').value);
+      sessionStorage.setItem("mon_pw",$('pwi').value);ov.remove();cb(runs);}
+    catch(_){ $('pwe').textContent="Неверный пароль"; }});
+}
+(async function boot(){
+  staffCards([]);
+  if(!window.OTDEL_ENC){$('sub').textContent="Прогонов ещё нет — запусти /hypotheses в Claude Code.";$('kanban').innerHTML="";$('feed').innerHTML='<div class="empty">Отдел ждёт первую задачу</div>';return;}
+  const go=runs=>{runs.reverse();staffCards(runs);show(runs,0);};
+  const saved=sessionStorage.getItem("mon_pw");
+  if(saved){try{go(await decrypt(window.OTDEL_ENC,saved));return;}catch(_){sessionStorage.removeItem("mon_pw");}}
+  askPw(go);
+})();
+</script>
+</body>
+</html>
