@@ -205,12 +205,9 @@ for c, a in contr_yest.items():
     if prev and prev["leads"] >= 20 and a["leads"] < 0.5 * prev["leads"]:
         alerts.append({"lvl": "warning", "text": f"{c}: лиды упали {prev['leads']} → {a['leads']} день к дню"})
 
-# ── конвейер агентов (если пакеты гипотез пушатся) ──
-pipe_path = os.path.join(DATA, "pipeline.json")
+# конвейер агентов показывается на otdel.html из шифрованного runs.enc.js;
+# plaintext-статуса в публичном репо быть не должно
 pipeline = None
-if os.path.exists(pipe_path):
-    with open(pipe_path, encoding="utf-8") as f:
-        pipeline = json.load(f)
 
 snapshot = {
     "updated": now.strftime("%Y-%m-%d %H:%M") + " МСК",

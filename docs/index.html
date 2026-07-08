@@ -146,7 +146,7 @@ pair(D.contr_yest,D.contr_today,'contr'); pair(D.city_yest,D.city_today,'city');
 // agents pipeline
 (function(){
  const p=D.pipeline;
- if(!p){$('pipeline').innerHTML='<span style="color:var(--muted);font-size:13px">Пакетов гипотез ещё не публиковалось. Конвейер: генератор → критик → контролёр → сценарист/лендинг (запуск: /hypotheses в Claude Code).</span>';return;}
+ if(!p){$('pipeline').innerHTML='<span style="color:var(--muted);font-size:13px">Работа агентов — споры, вердикты, гипотезы — на странице <a href="otdel.html" style="color:var(--accent)">«Отдел аналитики» →</a></span>';return;}
  let h=`<div class="pipe">
   <span class="st"><b>Пакет</b>${esc(p.date)} · фокус: ${esc(p.focus||'весь портфель')}</span><span>→</span>
   <span class="st"><b>Генератор</b>${p.generated} гипотез</span><span>→</span>
