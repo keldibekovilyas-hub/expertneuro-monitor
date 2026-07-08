@@ -267,8 +267,12 @@ if PASSWORD:
     hist_enc = os.path.join(DATA, "history.enc.json")
     history = []
     if os.path.exists(hist_enc):
-        with open(hist_enc, encoding="utf-8") as f:
-            history = dec(json.load(f))
+        try:
+            with open(hist_enc, encoding="utf-8") as f:
+                history = dec(json.load(f))
+        except Exception:
+            print("WARN: history.enc.json не расшифровалась текущим паролем — начинаю историю заново")
+            history = []
     history = [h for h in history if h["day"] != y_str]
     history.append({"day": y_str, **by_day[y_str],
                     "contr": {k: v["leads"] for k, v in contr_yest.items()},
