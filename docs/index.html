@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ExpertNeuro · Монитор</title>
+<style>
+:root{
+  --surface:#fcfcfb; --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --accent:#2a78d6; --good:#0ca30c; --goodtx:#006300; --warn:#c98500; --crit:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --surface:#1a1a19; --page:#0d0d0d; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --accent:#3987e5; --good:#0ca30c; --goodtx:#0ca30c; --warn:#c98500; --crit:#e66767; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:26px 18px 60px}
+h1{font-size:20px;margin:0 0 2px}
+.sub{color:var(--muted);font-size:12.5px;margin:0}
+h2{font-size:15.5px;margin:28px 0 8px}
+.alerts{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.alert{border-radius:10px;padding:10px 14px;font-size:13.5px;display:flex;gap:10px;align-items:baseline;border:1px solid var(--border);background:var(--surface)}
+.alert b{flex:none}
+.alert.critical b{color:var(--crit)} .alert.warning b{color:var(--warn)} .alert.ok b{color:var(--good)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tile .l{color:var(--ink2);font-size:12px;margin-bottom:3px}
+.tile .v{font-size:24px;font-weight:700}
+.tile .s{color:var(--muted);font-size:11.5px;margin-top:3px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{color:var(--ink2);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1px solid var(--axis);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.t,th.t{text-align:right}
+tr.warnrow td{color:var(--crit)}
+.bar{background:var(--grid);border-radius:3px;height:6px;min-width:70px;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accent)}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:650}
+.pill.g{color:var(--goodtx);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.pill.r{color:var(--crit);background:color-mix(in srgb,var(--crit) 12%,transparent)}
+.pill.n{color:var(--muted);background:var(--grid)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.note{color:var(--muted);font-size:11.5px;margin-top:10px}
+svg text{font-family:inherit}
+.tick{fill:var(--muted);font-size:10.5px}
+.pipe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink2)}
+.pipe .st{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+.pipe .st b{display:block;font-size:12px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>ExpertNeuro · Монитор CRM</h1>
+<p class="sub" id="updated">загрузка…</p>
+<div class="alerts" id="alerts"></div>
+<div class="kpis" id="kpis"></div>
+
+<h2>Поток за 8 дней (рекламные лиды / записи)</h2>
+<div class="card"><div id="trend"></div></div>
+
+<h2>Менеджеры — сегодня <span style="color:var(--muted);font-weight:400">(все лиды, день неполный)</span></h2>
+<div class="card"><div id="mgrToday"></div></div>
+
+<h2>Менеджеры — вчера <span style="color:var(--muted);font-weight:400">(закрытый день)</span></h2>
+<div class="card"><div id="mgrYest"></div></div>
+
+<div class="grid2">
+  <div><h2>Подрядчики (вчера → сегодня)</h2><div class="card"><div id="contr"></div></div></div>
+  <div><h2>Города (вчера → сегодня)</h2><div class="card"><div id="city"></div></div></div>
+</div>
+
+<h2>Конвейер агентов (гипотезы)</h2>
+<div class="card"><div id="pipeline"></div></div>
+
+<p class="note" id="methodnote"></p>
+</div>
+
+<script src="data/data.js" onerror="void 0"></script>
+<script src="data/data.enc.js" onerror="void 0"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=t=>{const s=document.createElement('span');s.textContent=String(t);return s.innerHTML;};
+function render(D){
+$('updated').textContent='Обновлено: '+D.updated+' · автоматический снапшот Битрикс24 (read-only), без участия LLM';
+$('methodnote').textContent=D.note;
+// alerts
+const al=$('alerts');
+if(!D.alerts.length){al.innerHTML='<div class="alert ok"><b>●</b> Аномалий не обнаружено</div>';}
+else D.alerts.forEach(a=>{al.innerHTML+=`<div class="alert ${a.lvl}"><b>${a.lvl==='critical'?'●':'▲'}</b> ${esc(a.text)}</div>`;});
+// KPIs
+const t=D.by_day[D.today], y=D.by_day[D.yesterday];
+$('kpis').innerHTML=[
+ ['Лидов сегодня',t.leads,'реклама, день идёт'],
+ ['Записал сегодня',t.booked,'конв. '+t.conv+'%'],
+ ['Лидов вчера',y.leads,'записал '+y.booked+' ('+y.conv+'%)'],
+ ['Дожим вчера',y.dojim,Math.round(100*y.dojim/Math.max(y.leads,1))+'% от лидов'],
+ ['Брак вчера',y.trash,''],
+ ['«Ничьих» сегодня',D.ownerless_today,'без менеджера'],
+].map(x=>`<div class="tile"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="s">${x[2]}</div></div>`).join('');
+// trend chart
+(function(){
+ const W=960,H=190,M={t:14,r:10,b:26,l:34};
+ const days=D.days, max=Math.max(...days.map(d=>D.by_day[d].leads),1)*1.15;
+ let s='';
+ for(let i=0;i<=3;i++){const yy=H-M.b-(H-M.t-M.b)*i/3;
+  s+=`<line x1="${M.l}" x2="${W-M.r}" y1="${yy}" y2="${yy}" stroke="${i?'var(--grid)':'var(--axis)'}"/>`
+   +`<text class="tick" x="${M.l-5}" y="${yy+3}" text-anchor="end">${Math.round(max*i/3)}</text>`;}
+ days.forEach((d,i)=>{
+  const bw=Math.min(26,(W-M.l-M.r)/days.length*0.5), cx=M.l+(W-M.l-M.r)*(i+0.5)/days.length;
+  const b=D.by_day[d], h1=b.leads/max*(H-M.t-M.b), h2=b.booked/max*(H-M.t-M.b);
+  s+=`<rect x="${cx-bw/2}" y="${H-M.b-h1}" width="${bw}" height="${h1}" rx="3" fill="var(--accent)" opacity="${i===days.length-1?0.45:1}"/>`;
+  s+=`<rect x="${cx-bw/2}" y="${H-M.b-h2}" width="${bw}" height="${h2}" rx="3" fill="var(--good)" opacity="${i===days.length-1?0.5:0.9}"/>`;
+  s+=`<text class="tick" x="${cx}" y="${H-M.b+15}" text-anchor="middle">${d.slice(8,10)}.${d.slice(5,7)}${i===days.length-1?'*':''}</text>`;
+ });
+ $('trend').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${s}</svg>
+ <div class="note">Синий — лиды, зелёный — записи. * — сегодняшний неполный день.</div>`;
+})();
+// managers tables
+function mgrTable(rows,elId){
+ const max=Math.max(...rows.map(r=>r.leads),1);
+ let h='<table><thead><tr><th>Менеджер</th><th>Нагрузка</th><th class="t">Лидов</th><th class="t">Записал</th><th class="t">Конв.</th><th class="t">НБ</th><th class="t">В раб.</th><th class="t">Дожим</th><th class="t">Брак</th></tr></thead><tbody>';
+ rows.forEach(r=>{
+  const warn=r.leads>=15&&r.conv<10&&!r.mgr.startsWith('(');
+  h+=`<tr${warn?' class="warnrow"':''}><td>${esc(r.mgr)}</td><td><div class="bar"><i style="width:${100*r.leads/max}%"></i></div></td>`+
+     `<td class="t">${r.leads}</td><td class="t">${r.booked}</td><td class="t">${r.conv}%</td><td class="t">${r.nb||'—'}</td><td class="t">${r.inwork||'—'}</td><td class="t">${r.dojim||'—'}</td><td class="t">${r.trash||'—'}</td></tr>`;
+ });
+ $(elId).innerHTML=h+'</tbody></table>';
+}
+mgrTable(D.mgr_today,'mgrToday'); mgrTable(D.mgr_yest,'mgrYest');
+// contractors / cities
+function pair(objY,objT,elId){
+ const keys=[...new Set([...Object.keys(objY),...Object.keys(objT)])];
+ let h='<table><thead><tr><th></th><th class="t">Вчера</th><th class="t">Конв.</th><th class="t">Сегодня*</th><th></th></tr></thead><tbody>';
+ keys.forEach(k=>{
+  const a=objY[k]||{leads:0,conv:0}, b=objT[k]||{leads:0};
+  const d=b.leads-a.leads, pill=d>0?`<span class="pill g">+${d}</span>`:d<0?`<span class="pill r">${d}</span>`:`<span class="pill n">=</span>`;
+  h+=`<tr><td>${esc(k)}</td><td class="t">${a.leads}</td><td class="t">${a.conv}%</td><td class="t">${b.leads}</td><td>${pill}</td></tr>`;
+ });
+ $(elId).innerHTML=h+'</tbody></table>';
+}
+pair(D.contr_yest,D.contr_today,'contr'); pair(D.city_yest,D.city_today,'city');
+// agents pipeline
+(function(){
+ const p=D.pipeline;
+ if(!p){$('pipeline').innerHTML='<span style="color:var(--muted);font-size:13px">Пакетов гипотез ещё не публиковалось. Конвейер: генератор → критик → контролёр → сценарист/лендинг (запуск: /hypotheses в Claude Code).</span>';return;}
+ let h=`<div class="pipe">
+  <span class="st"><b>Пакет</b>${esc(p.date)} · фокус: ${esc(p.focus||'весь портфель')}</span><span>→</span>
+  <span class="st"><b>Генератор</b>${p.generated} гипотез</span><span>→</span>
+  <span class="st"><b>Критик</b>PASS ${p.pass} · DEAD ${p.dead}</span><span>→</span>
+  <span class="st"><b>Контролёр</b>${esc(p.controller||'—')}</span><span>→</span>
+  <span class="st"><b>Продакшн</b>${p.scripts||0} сцен. · ${p.landings||0} ленд.</span></div>`;
+ if(p.top&&p.top.length){h+='<table style="margin-top:10px"><thead><tr><th>Гипотеза в тесте</th><th>Метрика успеха</th><th>Статус</th></tr></thead><tbody>';
+  p.top.forEach(g=>{h+=`<tr><td style="white-space:normal">${esc(g.name)}</td><td style="white-space:normal">${esc(g.metric||'')}</td><td>${esc(g.status||'ждёт запуска')}</td></tr>`;});
+  h+='</tbody></table>';}
+ $('pipeline').innerHTML=h;
+})(); // конец render-подблоков
+}
+
+/* ── boot: открытые данные / расшифровка по паролю ── */
+async function decrypt(blob,password){
+  const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey(
+    {name:"PBKDF2",salt:b64(blob.salt),iterations:blob.iter||300000,hash:"SHA-256"},
+    km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(blob.iv)},key,b64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function askPassword(){
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:var(--page);display:flex;align-items:center;justify-content:center;z-index:99";
+  ov.innerHTML=`<form id="pwf" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 30px;max-width:340px;width:92%">
+    <div style="font-weight:700;font-size:17px;margin-bottom:4px">ExpertNeuro · Монитор</div>
+    <div style="color:var(--muted);font-size:12.5px;margin-bottom:14px">Данные зашифрованы. Введите пароль доступа.</div>
+    <input id="pwi" type="password" autocomplete="current-password" style="width:100%;padding:10px 12px;border:1px solid var(--axis);border-radius:8px;background:var(--page);color:var(--ink);font-size:15px" autofocus>
+    <div id="pwe" style="color:var(--crit);font-size:12px;height:16px;margin-top:6px"></div>
+    <button style="width:100%;margin-top:8px;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:650;font-size:14px;cursor:pointer">Открыть</button>
+  </form>`;
+  document.body.append(ov);
+  document.getElementById("pwf").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const pw=document.getElementById("pwi").value;
+    document.getElementById("pwe").textContent="";
+    try{
+      const D=await decrypt(window.MONITOR_ENC,pw);
+      sessionStorage.setItem("mon_pw",pw); ov.remove(); render(D);
+    }catch(_){ document.getElementById("pwe").textContent="Неверный пароль"; }
+  });
+}
+(async function boot(){
+  if(window.MONITOR_DATA){ render(window.MONITOR_DATA); return; }
+  if(window.MONITOR_ENC){
+    const saved=sessionStorage.getItem("mon_pw");
+    if(saved){ try{ render(await decrypt(window.MONITOR_ENC,saved)); return; }catch(_){ sessionStorage.removeItem("mon_pw"); } }
+    askPassword(); return;
+  }
+  $('updated').textContent='Нет данных: запусти scripts/monitor.py или дождись GitHub Actions.';
+})();
+</script>
+</body>
+</html>

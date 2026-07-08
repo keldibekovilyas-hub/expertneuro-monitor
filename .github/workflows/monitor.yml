@@ -1,0 +1,42 @@
+name: monitor
+
+on:
+  schedule:
+    # 5 раз в день в рабочие часы Алматы (UTC+5): 09,12,15,18,21 → 04,07,10,13,16 UTC
+    - cron: "0 4,7,10,13,16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install cryptography
+
+      - name: Snapshot Bitrix (read-only, encrypted output)
+        env:
+          BITRIX_WEBHOOK: ${{ secrets.BITRIX_WEBHOOK }}
+          DASH_PASSWORD: ${{ secrets.DASH_PASSWORD }}
+          BX_USERS_JSON: ${{ secrets.BX_USERS_JSON }}
+        run: python scripts/monitor.py
+
+      - name: Commit data
+        run: |
+          git config user.name "expertneuro-monitor"
+          git config user.email "monitor@users.noreply.github.com"
+          git add docs/data/
+          git diff --cached --quiet && echo "no changes" || git commit -m "snapshot $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push

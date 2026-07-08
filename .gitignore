@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+bx_users.json
+docs/data/data.js
+docs/data/latest.json
+docs/data/history.json
